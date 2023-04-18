@@ -41,7 +41,7 @@ class GeneticAlgorithm:
         if weight > self.capacity:
             return 0
         #at least one item from each class
-        if len(set([self.class_label[i] for i in range(len(individual)) if individual[i] == 1])) == self.number_of_classes:
+        if len(set([self.class_label[i] for i in range(len(individual)) if individual[i] == 1])) < self.number_of_classes:
             return 0
         return value
             
@@ -120,6 +120,6 @@ def input(file_name):
         "class_label": class_label
     }
 
-case = input("./test_case/input_2.txt")
+case = input("./test_case/input_1.txt")
 ga = GeneticAlgorithm(case)
 print(ga.run())
