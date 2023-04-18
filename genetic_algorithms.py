@@ -41,7 +41,7 @@ class GeneticAlgorithm:
         if weight > self.capacity:
             return 0
         #at least one item from each class
-        if len(set([self.class_label[i] for i in range(len(individual)) if individual[i] == 1])) < self.number_of_classes:
+        if len(set([self.class_label[i] for i in range(len(individual)) if individual[i] == 1])) != self.number_of_classes:
             return 0
         return value
             
