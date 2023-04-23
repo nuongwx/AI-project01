@@ -8,16 +8,6 @@ class Node:
         self.type = class_type
         self.ans = ans
 
-    # def __eq__(self, other):
-    #     return (
-    #         self.weight == other.weight
-    #         and self.value == other.value
-    #         and self.type == other.type
-    #     )
-
-    # def __lt__(self, other):
-    #     return self.type < other.type
-
 
 def generate_dataset(size, num_of_class):
     arr = []
@@ -43,8 +33,8 @@ def generate_dataset(size, num_of_class):
     max_weight = sum([i.weight for i in arr])
     random.shuffle(arr)
     return (
-        # random.randint(int(min_weight), int(max_weight)),
-        int(min_weight), # deterministic?
+        random.randint(int(min_weight), int((max_weight + min_weight) / 2)),
+        # int(min_weight), # deterministic?
         num_of_class,
         arr,
     )
@@ -99,15 +89,14 @@ def verify_answer(file_input="input.txt", file_output="output.txt"):
 
 
 def main():
-    # capacity, num_of_class, dataset = generate_dataset(40, 5)
+    # capacity, num_of_class, dataset = generate_dataset(50, 5)
     # print_dataset(capacity, num_of_class, dataset, "test" + str(capacity) + ".txt")
-    # print(verify_answer("test/q.txt", "test/output.txt"))
+    # print(verify_answer("test/ptn.txt", "test/output.txt"))
     size = [10, 10, 20, 30, 40, 50, 100, 200, 500, 1000]
     n_class = [1, 2, 2, 3, 4, 5, 6, 7, 8, 9]
-    for i in range(10):
+    for i in range(len(size)):
         capacity, num_of_class, dataset = generate_dataset(size[i], n_class[i])
-        print_dataset(capacity, num_of_class, dataset, f"test\\void\\INPUT_{i}.txt")
-
+        print_dataset(capacity, num_of_class, dataset, f"test/input/INPUT_{i}.txt")
 
 
 if __name__ == "__main__":

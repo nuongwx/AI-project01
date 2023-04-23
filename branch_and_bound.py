@@ -37,7 +37,7 @@ class BranchAndBound:
         return self.print()
 
     def solve_branch_and_bound(self, candidate, depth, remaining_weight, current_value):
-        print(self.upper_bound, current_value, remaining_weight)
+        # print(self.upper_bound, current_value, remaining_weight)
         for i in range(2):
             candidate[self.data[depth].index] = i
             if i == 1:
