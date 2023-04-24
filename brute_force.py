@@ -15,7 +15,7 @@ class BruteForce:
         return self.highestVal, best_track
 
     def bruteForce(self, count_class, track, best_track, calW, calValue, index):
-        print(self.highestVal)
+        # print(self.highestVal)
         count_class = len(set(self.labels[i] for i in range(len(self.labels)) if track[i] == 1))
         if calValue > self.highestVal and count_class == self.number_of_classes:
             self.highestVal = calValue

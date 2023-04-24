@@ -76,7 +76,7 @@ class GeneticAlgorithm:
         new_generation = []
         # run genetic algorithm creating MAX_GENERATION new generation
         for i in range(MAX_GENERATION):
-            print(i, self.fitness(self.population[0]))
+            # print(i, self.fitness(self.population[0]))
             # select parent
             parent_list = self.selection_parent()
             for i in range(self.population_size):
