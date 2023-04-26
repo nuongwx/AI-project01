@@ -1,5 +1,5 @@
-import os, sys  # for path manipulation, system calls
-import timeit  # for time measurement
+import os, sys  # path manip, system calls
+import timeit  # time measurements
 
 from generator import main as generate_dataset
 
@@ -18,8 +18,10 @@ def demo():
     # generate_dataset()
     with open("stats.csv", "w+") as f:
         f.write("\n")
+        os.mkdir(os.path.normpath(os.getcwd() + "/test/output"))
         for idx, i in enumerate(ALGO):
             print(f"Running {ALGO_NAME[idx]}")
+            os.mkdir(os.path.normpath(os.getcwd() + f"/test/output/{ALGO_NAME[idx]}"))
             f.write(f"{ALGO_NAME[idx]}, ")
             for j in range(0, 10):
                 print(f"Case {j + 1}")
@@ -31,7 +33,7 @@ def demo():
                 case = fo.read_file(f"test/input/INPUT_{j + 1}.txt")
                 start = timeit.default_timer()
                 # mem1 = mem_profile.memory_usage()
-                val, ans = i(case)
+                val, ans = i.run(case)
                 # mem2 = mem_profile.memory_usage()
                 stop = timeit.default_timer()
                 fo.write_file(f"test/output/{ALGO_NAME[idx]}/OUTPUT_{j + 1}.txt", val, ans)
