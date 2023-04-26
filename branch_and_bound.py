@@ -1,61 +1,111 @@
+import heapq
+
+
+class Item:
+    def __init__(self, _w: float, _v: int, _c: int, _idx: int):
+        self.weight = _w
+        self.value = _v
+        self.label = _c
+        self.index = _idx
+        self.ratio = _v / _w
+
+
 class Node:
-    def __init__(self, w, v, c, i):
-        self.weight = w
-        self.value = v
-        self.label = c
-        self.index = i  # index in the original array since we need to do some sorting
-        self.cost = v / w  # idk old man said to do this
+    def __init__(self, _i: list[Item], _c: set, _w: float, _v: int, _idx: int):
+        self.items = _i
+        self.labels = _c
+        self.weight = _w
+        self.value = _v
+        self.depth = _idx
 
 
-class BranchAndBound:
+class PriorityQueue:
+    def __init__(self):
+        self.queue = []
+        self.index = 0
+
+    def push(self, _i, priority):
+        # -priority makes the pop() method return the item with the highest priority.
+        # index is just icing on the cake really, but try to remove it and see what happens
+        heapq.heappush(self.queue, (-priority, self.index, _i))
+        self.index += 1
+
+    def pop(self) -> Node:
+        return heapq.heappop(self.queue)[-1]
+
+    def __len__(self) -> int:
+        return len(self.queue)
+
+
+class Knapsack:
     def __init__(self, case):
-        self.upper_bound = 0
-        self.answer = []
         self.capacity = case["capacity"]
-        self.num_of_class = case["number_of_classes"]
-        self.weight = case["weights"]
-        self.value = case["values"]
-        self.label = case["labels"]
-        self.data = list(Node(self.weight[i], self.value[i], self.label[i], i) for i in range(self.weight.__len__()))
-        self.zmap = {i: self.data[i] for i in range(len(self.data))}
-        self.data.sort(key=lambda x: x.cost, reverse=True)  # prio q
+        self.number_of_classes = case["number_of_classes"]
+        self.items = [
+            Item(case["weights"][i], case["values"][i], case["labels"][i], i) for i in range(len(case["weights"]))
+        ]
+        self.items.sort(key=lambda x: x.ratio, reverse=True)
 
-    def print(self):
-        return self.upper_bound, self.answer
+    def bound(self, node: Node) -> float:
+        remaining_capacity = self.capacity - node.weight
+        # idx = len(node.items)
+        if remaining_capacity < 0:  # = or not =, that's the question
+            return 0
+        # bound = node.value + self.items[len(node.items)].ratio * remaining_capacity
+        result = node.value
+        for i in range(node.depth + 1, len(self.items)):
+            if self.items[i].weight <= remaining_capacity:
+                result += self.items[i].value
+                remaining_capacity -= self.items[i].weight
+            else:
+                result += self.items[i].ratio * remaining_capacity
+                break
+        return result
 
-    def class_check(self, candidate):
-        # check whether candidate contains all classes
-        classes = set()
-        for i, idx in enumerate(candidate):
-            if idx == 1:
-                classes.add(self.label[i])
-        return len(classes) == self.num_of_class
+    def solve(self):
+        best_value = 0
+        ans = []
+        queue = PriorityQueue()
+        queue.push(Node([], set(), 0, 0, -1), 0)
+        while queue:
+            node = queue.pop()
+            if node.depth + 1 == len(self.items):
+                if (
+                    node.weight <= self.capacity
+                    and node.value > best_value
+                    and len(node.labels) == self.number_of_classes
+                ):
+                    best_value = node.value
+                    # print(best_value)
+                    ans = [x.index for x in node.items]
+            else:
+                item = self.items[node.depth + 1]
 
-    def run(self):
-        candidate = [0] * len(self.data)
-        self.solve_branch_and_bound(candidate, 0, self.capacity, 0)
-        return self.print()
+                # branching: with item
+                new_labels = node.labels.copy()
+                new_labels.add(item.label)
+                with_item = Node(
+                    node.items + [item],
+                    new_labels,
+                    node.weight + item.weight,
+                    node.value + item.value,
+                    node.depth + 1,
+                )
+                with_item_bound = self.bound(with_item)
 
-    def solve_branch_and_bound(self, candidate, depth, remaining_weight, current_value):
-        # print(self.upper_bound, current_value, remaining_weight)
-        for i in range(2):
-            candidate[self.data[depth].index] = i
-            if i == 1:
-                remaining_weight -= self.data[depth].weight
-                current_value += self.data[depth].value
-            if remaining_weight >= 0:
-                if depth == len(self.data) - 1:
-                    if current_value > self.upper_bound and self.class_check(candidate):
-                        self.upper_bound = current_value
-                        self.answer = candidate.copy()
-                # textbook heuristic really
-                elif current_value + remaining_weight * self.data[depth + 1].cost > self.upper_bound:
-                    self.solve_branch_and_bound(candidate, depth + 1, remaining_weight, current_value)
-            # if i == 1:    # this is not needed since we are not going to use the candidate # array again
-            #     current_weight += self.data[depth].weight
-            #     current_value -= self.data[depth].value
+                # and without item
+                without_item = Node(node.items, node.labels, node.weight, node.value, node.depth + 1)
+                without_item_bound = self.bound(without_item)
+
+                # the bound part
+                if with_item_bound > best_value:
+                    queue.push(with_item, with_item_bound)
+                if without_item_bound > best_value:
+                    queue.push(without_item, without_item_bound)
+        # mark item with index 1 if it is in the answer, 0 otherwise
+        return best_value, [1 if i in ans else 0 for i in range(len(self.items))]
 
 
 def run(case):
-    bnb = BranchAndBound(case)
-    return bnb.run()
+    ks = Knapsack(case)
+    return ks.solve()
