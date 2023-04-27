@@ -1,5 +1,5 @@
 import os, sys  # path manip, system calls
-import timeit  # time measurements
+import timeit, tracemalloc  # measurements
 
 from generator import main as generate_dataset
 
@@ -16,32 +16,30 @@ ALGO = [brute_force, branch_and_bound, local_beam_search, genetic_algorithms]
 
 def demo():
     # generate_dataset()
-    with open("stats.csv", "w+") as f:
-        f.write("\n")
+    if not os.path.isdir(os.path.normpath(os.getcwd() + "/test/output")):
         os.mkdir(os.path.normpath(os.getcwd() + "/test/output"))
+    with open("test/output/stats.csv", "w+") as f:
+        f.write("\n")
         for idx, i in enumerate(ALGO):
+            clear_screen()
             print(f"Running {ALGO_NAME[idx]}")
-            os.mkdir(os.path.normpath(os.getcwd() + f"/test/output/{ALGO_NAME[idx]}"))
+            if not os.path.isdir(os.path.normpath(os.getcwd() + f"/test/output/{ALGO_NAME[idx]}")):
+                os.mkdir(os.path.normpath(os.getcwd() + f"/test/output/{ALGO_NAME[idx]}"))
             f.write(f"{ALGO_NAME[idx]}, ")
             for j in range(0, 10):
-                print(f"Case {j + 1}")
+                # print(f"Case {j + 1}")
                 # ignore large cases for brute force
-                if i == ALGO[0] and j > 4:
-                    f.write("-1, ")
+                if i == ALGO[0] and j > 3:
+                    f.write("-1, -1, ")
                     continue
                 #
-                case = fo.read_file(f"test/input/INPUT_{j + 1}.txt")
-                start = timeit.default_timer()
-                # mem1 = mem_profile.memory_usage()
-                val, ans = i.run(case)
-                # mem2 = mem_profile.memory_usage()
-                stop = timeit.default_timer()
-                fo.write_file(f"test/output/{ALGO_NAME[idx]}/OUTPUT_{j + 1}.txt", val, ans)
-                # writer.writerow(["", stop - start, mem2[0] - mem1[0]])
-                f.write(f"{stop - start}, ")
+                val, ans, time, mem = unit(f"test/input/INPUT_{j}.txt", i)
+                fo.write_file(f"test/output/{ALGO_NAME[idx]}/OUTPUT_{j}.txt", val, ans)
+                f.write(f"{time},{mem}, ")
                 f.flush()
                 os.fsync(f.fileno())
             f.write("\n")
+            input("Press [ENTER] to continue")
 
 
 def unit(filename, algo):
@@ -50,11 +48,17 @@ def unit(filename, algo):
     except FileNotFoundError or ValueError:
         print(filename + " is invalid")
         return -1, [], -1
+    print("Running " + ALGO_NAME[ALGO.index(algo)] + " on " + filename)
     start = timeit.default_timer()
+    tracemalloc.start()
     val, ans = algo.run(case)
+    mem = tracemalloc.get_traced_memory()[1] / 1000000
     stop = timeit.default_timer()
+    tracemalloc.stop()
     print("Task completed in", stop - start, "seconds")
-    return val, ans, stop - start
+    print("Memory usage:", mem, "MB")
+    print("-" * 42)
+    return val, ans, stop - start, mem
 
 
 def error_message(message, fp):
@@ -64,8 +68,12 @@ def error_message(message, fp):
     return fp()
 
 
-def algorithms_menu():
+def clear_screen():
     print("\033[H\033[J")
+
+
+def algorithms_menu():
+    clear_screen()
     print("ALGORITHMS")
     print(*[str(i + 1) + ". " + ALGO_NAME[i] for i in range(len(ALGO_NAME))], sep="\n")
     print("0. Exit")
@@ -76,6 +84,7 @@ def algorithms_menu():
             return 0
         choice = int(text)
         if choice == 0:
+            clear_screen()
             exit()
         elif choice > 0 and choice <= len(ALGO_NAME):
             return choice
@@ -100,7 +109,7 @@ def path_clean_and_check(path: str = "", is_folder: bool = False):
 
 
 def testcase_source_menu():
-    print("\033[H\033[J")
+    clear_screen()
     print("INPUT")
     print("1. Input from txt file")
     print("2. Input from folder")
@@ -110,7 +119,7 @@ def testcase_source_menu():
     try:
         text = input()
         if text == "":
-            return path_clean_and_check("test/input")
+            return path_clean_and_check("test/input", True)
         choice = int(text)
         if choice == 0:
             return None
@@ -141,6 +150,11 @@ def boolean_input(msg: str):
         return error_message("Invalid choice. Try again.", lambda: boolean_input(msg))
 
 
+def report_append(filename: str, time: float, mem: float):
+    with open("test/output/stats.csv", "a", newline="") as f:
+        f.write(f"{filename},{time},{mem}\n")
+
+
 def menu_handler():
     # invoke algorithms choice menu
     choice = algorithms_menu()
@@ -153,7 +167,8 @@ def menu_handler():
         if input_path is None:
             menu_handler()  # backing out
         else:
-            val, ans, time = 0, 0, []
+            val, ans, time, mem = 0, 0, 0, 0
+
             # creating output necessities
             output_flag = boolean_input("Do you want to save output and stats?")
             if output_flag:
@@ -162,29 +177,29 @@ def menu_handler():
                     os.mkdir("test/output")
                 if not os.path.exists("test/output/" + ALGO_NAME[choice - 1]):
                     os.mkdir("test/output/" + ALGO_NAME[choice - 1])
-                if os.path.exists("stats.csv"):
-                    if boolean_input("stats.csv already exists. Do you want to overwrite?"):
-                        os.remove("stats.csv")
+                if os.path.exists("test/output/stats.csv"):
+                    if not boolean_input("stats.csv already exists. Do you want append or overwrite?"):
+                        with open("test/output/stats.csv", "w", newline="") as f:
+                            f.write("filename,time,mem\n")
+            clear_screen()
             try:
                 # if input is a folder
-                file_list = [f for f in os.listdir(input_path) if os.path.isfile(os.path.join(input_path, f))]
+                file_list = [os.path.join(input_path, f) for f in os.listdir(input_path) if os.path.isfile(os.path.join(input_path, f))]  # fmt: skip
+                # only run on .txt files
+                file_list = [f for f in file_list if f.endswith(".txt")]
                 for file in file_list:
-                    print(f"Running {ALGO_NAME[choice - 1]} on {file}")
-                    val, ans, temp_time = unit(f"{input_path}/{file}", ALGO[choice - 1])
-                    time.append(temp_time)
+                    # print(f"Running {ALGO_NAME[choice - 1]} on {file}")
+                    val, ans, time, mem = unit(file, ALGO[choice - 1])
                     if output_flag:
+                        report_append(ALGO[choice - 1].__name__ + "," + os.path.basename(file), time, mem)
                         fo.write_file(f"test/output/{ALGO_NAME[choice - 1]}/OUTPUT_{os.path.basename(file).split('.')[0]}.txt", val, ans)  # fmt: skip
             except NotADirectoryError:
                 # if input is a file
-                print("Running " + ALGO_NAME[choice - 1] + " on " + input_path)
-                val, ans, time = unit(input_path, ALGO[choice - 1])
-                time = [time]
+                # print("Running " + ALGO_NAME[choice - 1] + " on " + input_path)
+                val, ans, time, mem = unit(input_path, ALGO[choice - 1])
                 if output_flag:
+                    report_append(ALGO[choice - 1].__name__ + "," + os.path.basename(input_path), time, mem)
                     fo.write_file(f"test/output/{ALGO_NAME[choice - 1]}/OUTPUT_{os.path.basename(input_path).split('.')[0]}.txt", val, ans)  # fmt: skip
-            # write stats
-            if output_flag:
-                with open("stats.csv", "w+") as f:
-                    f.write(f"{ALGO_NAME[choice - 1]}" + ", ".join([str(i) for i in time]) + "\n")
 
             print("Press [ENTER] to continue...")
             input()

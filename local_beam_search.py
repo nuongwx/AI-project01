@@ -67,9 +67,14 @@ class LocalBeam:
 
         best_path = paths_so_far[0]
         best_track = [0] * n
+        label_set = set()
+        total_weight = 0
         for x in best_path[0]:
             best_track[x] = 1
-
+            total_weight += self.weights[x]
+            label_set.add(self.labels[x])
+        if total_weight > self.capacity or len(label_set) != self.num_class:
+            return 0, best_track
         self.highest_val = best_path[1]
         return self.highest_val, best_track
 
