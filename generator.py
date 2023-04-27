@@ -15,7 +15,7 @@ def generate_dataset(size, num_of_class):
     for i in range(num_of_class):
         arr.append(
             Node(
-                random.gauss(10, 1) * random.randint(1, 10),
+                random.uniform(10, 100),
                 random.randint(1, 10),
                 i + 1,
                 1,
@@ -25,7 +25,7 @@ def generate_dataset(size, num_of_class):
     for i in range(size - num_of_class):
         arr.append(
             Node(
-                random.gauss(10, 1) * random.randint(1, 10),
+                random.uniform(10, 100),
                 random.randint(1, 10),
                 random.randint(1, num_of_class),
             )
@@ -34,7 +34,8 @@ def generate_dataset(size, num_of_class):
     random.shuffle(arr)
     return (
         # random.randint(int(min_weight), max(int(min_weight), int((max_weight + min_weight) / 4))),
-        int(min_weight + 0.1 * min_weight),  # deterministic?
+        int(min_weight + 0.01 * max_weight),  # deterministic?
+        # int(random.gauss(min_weight + 0.1 * max_weight, 5)),
         num_of_class,
         arr,
     )
@@ -93,7 +94,7 @@ def main():
     # capacity, num_of_class, dataset = generate_dataset(50, 5)
     # print_dataset(capacity, num_of_class, dataset, "test" + str(capacity) + ".txt")
     # print(verify_answer("test/ptn.txt", "test/output.txt"))
-    size = [10, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+    size = [10, 10, 20, 30, 40, 50, 75, 100, 125, 150]
     n_class = [1, 2, 2, 3, 4, 5, 6, 7, 8, 9]
     for i in range(len(size)):
         capacity, num_of_class, dataset = generate_dataset(size[i], n_class[i])
